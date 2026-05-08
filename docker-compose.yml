@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:15
+    container_name: taskqueue-pg
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: taskqueue
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taskqueue-api
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/taskqueue
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: taskqueue-worker
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/taskqueue
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
